@@ -1,95 +1,93 @@
-export enum Operator {
-  SUM = 0,
-  MINUS = 1,
+export enum Operation {
+  ADDITION = 0,
+  SUBTRACTION = 1,
   DIVISION = 2,
   MULTIPLICATION = 3,
 }
 
-export interface Operation {
-  operator: Operator;
-  operation: Array<number | Operation[]>;
+export interface Formula {
+  operation: Operation;
+  numbers: Array<number | Formula[]>;
 }
 
-export function calculator(operations: Operation[], result = 0) {
-  const sortedOperations = operations.sort((a, b) => b.operator - a.operator);
+export function calculate(formulas: Formula[], result = 0): number {
+  const sorted = formulas.sort((a, b) => b.operation - a.operation);
 
-  sortedOperations.forEach((operation) => {
-    result = calculator2(operation.operation, operation.operator, result);
+  sorted.forEach((formula) => {
+    result = calculateFormula(formula.numbers, formula.operation, result);
     console.log(result);
   });
 
   return result;
 }
 
-function calculator2(
-  operations: (number | Operation[])[],
-  operator: Operator,
+function calculateFormula(
+  numbers: Array<number | Formula[]>,
+  operation: Operation,
   result: number
-) {
-  if (operations.every((operation) => typeof operation === "number")) {
-    result = calculator3(operations as number[], operator, result);
+): number {
+  if (numbers.every((number) => typeof number === "number")) {
+    result = solveFormula(numbers as number[], operation, result);
   } else {
-    const simplifiedOperations = operations.map((operation) => {
-      if (typeof operation === "number") {
-        return operation;
-      }
-      return calculator(operation);
+    const simplifiedOperations = numbers.map((number) => {
+      if (typeof number === "number") return number;
+      return calculate(number);
     });
 
-    result = calculator2(simplifiedOperations, operator, result);
+    result = calculateFormula(simplifiedOperations, operation, result);
   }
 
   return result;
 }
 
-function calculator3(operations: number[], operator: Operator, result: number) {
-  result += solve(operations, operator); // TODO: external operator
+function solveFormula(
+  numbers: number[],
+  operation: Operation,
+  result: number
+): number {
+  result += solve(numbers, operation);
   return result;
 }
 
-function solve(numbers: number[], operator: Operator): number {
-  let result = numbers[0];
+function solve(numbers: number[], operation: Operation): number {
+  let result = operation === Operation.SUBTRACTION ? -numbers[0] : numbers[0];
   for (let i = 1; i < numbers.length; i++) {
-    if (operator === Operator.DIVISION) {
+    if (operation === Operation.DIVISION) {
       result /= numbers[i];
-    } else if (operator === Operator.MULTIPLICATION) {
+    } else if (operation === Operation.MULTIPLICATION) {
       result *= numbers[i];
-    } else if (operator === Operator.SUM) {
+    } else if (operation === Operation.ADDITION) {
       result += numbers[i];
-    } else if (operator === Operator.MINUS) {
+    } else if (operation === Operation.SUBTRACTION) {
       result -= numbers[i];
     }
   }
   return result;
 }
 
-const expected = 2 - 4 / 3 - 5 - 7 + 2 * (9 + 2 / 2);
-const actual = calculator([
+const expected = 2 - 4 / 3 - 5 - 7 + (2 * 20) / 2;
+const actual = calculate([
   {
-    operator: Operator.SUM,
-    operation: [2],
-  },
-  {
-    operator: Operator.DIVISION,
-    operation: [-4, 3],
-  },
-  {
-    operator: Operator.MINUS,
-    operation: [-5, 7],
-  },
-  {
-    operator: Operator.MULTIPLICATION,
-    operation: [
+    operation: Operation.ADDITION,
+    numbers: [
       2,
       [
         {
-          operator: Operator.SUM,
-          operation: [
-            9,
+          operation: Operation.DIVISION,
+          numbers: [-4, 3],
+        },
+        {
+          operation: Operation.SUBTRACTION,
+          numbers: [5, 7],
+        },
+        {
+          operation: Operation.MULTIPLICATION,
+          numbers: [
+            2,
             [
               {
-                operator: Operator.DIVISION,
-                operation: [2, 2],
+                operation: Operation.DIVISION,
+                numbers: [20, 2],
               },
             ],
           ],
