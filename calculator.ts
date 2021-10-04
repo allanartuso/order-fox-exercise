@@ -1,70 +1,102 @@
-enum Operator {
+export enum Operator {
   SUM = 0,
   MINUS = 1,
   DIVISION = 2,
   MULTIPLICATION = 3,
 }
 
-interface Operation {
+export interface Operation {
   operator: Operator;
-  numbers: number[];
+  operation: Array<number | Operation[]>;
 }
 
-function calculator(operations: Operation[]) {
-  let result = 0;
+export function calculator(operations: Operation[], result = 0) {
+  const sortedOperations = operations.sort((a, b) => b.operator - a.operator);
 
-  operations
-    .sort((a, b) => b.operator - a.operator)
-    .forEach((operation) => {
-        if (operation.operator === Operator.DIVISION) {
-            result += solveDivision(operation.numbers);
-          } else if (operation.operator === Operator.MULTIPLICATION) {
-            result += solveDivision(operation.numbers);
-          } else {
-        operation.numbers.forEach((number) => {
-          if (operation.operator === Operator.SUM) {
-            result += number;
-          } else if (operation.operator === Operator.MINUS) {
-            result -= number;
-          }
-        });
-      }
-
-      console.log(result);
-    });
+  sortedOperations.forEach((operation) => {
+    result = calculator2(operation.operation, operation.operator, result);
+    console.log(result);
+  });
 
   return result;
 }
 
-function solveDivision(numbers: number[]): number {
-    let result = numbers[0];
-    for (let i = 1; i < numbers.length; i++) {
-      result = result / numbers[i];
-    }
-    return result;
+function calculator2(
+  operations: (number | Operation[])[],
+  operator: Operator,
+  result: number
+) {
+  if (operations.every((operation) => typeof operation === "number")) {
+    result = calculator3(operations as number[], operator, result);
+  } else {
+    const simplifiedOperations = operations.map((operation) => {
+      if (typeof operation === "number") {
+        return operation;
+      }
+      return calculator(operation);
+    });
+
+    result = calculator2(simplifiedOperations, operator, result);
   }
 
-  function solveMultiplication(numbers: number[]): number {
-    let result = numbers[0];
-    for (let i = 1; i < numbers.length; i++) {
-      result = result * numbers[i];
-    }
-    return result;
-  }
+  return result;
+}
 
-const operations: Operation[] = [
+function calculator3(operations: number[], operator: Operator, result: number) {
+  result += solve(operations, operator); // TODO: external operator
+  return result;
+}
+
+function solve(numbers: number[], operator: Operator): number {
+  let result = numbers[0];
+  for (let i = 1; i < numbers.length; i++) {
+    if (operator === Operator.DIVISION) {
+      result /= numbers[i];
+    } else if (operator === Operator.MULTIPLICATION) {
+      result *= numbers[i];
+    } else if (operator === Operator.SUM) {
+      result += numbers[i];
+    } else if (operator === Operator.MINUS) {
+      result -= numbers[i];
+    }
+  }
+  return result;
+}
+
+const expected = 2 - 4 / 3 - 5 - 7 + 2 * (9 + 2 / 2);
+const actual = calculator([
   {
     operator: Operator.SUM,
-    numbers: [2],
+    operation: [2],
   },
   {
     operator: Operator.DIVISION,
-    numbers: [4, 3],
+    operation: [-4, 3],
   },
   {
     operator: Operator.MINUS,
-    numbers: [5],
+    operation: [-5, 7],
   },
-];
+  {
+    operator: Operator.MULTIPLICATION,
+    operation: [
+      2,
+      [
+        {
+          operator: Operator.SUM,
+          operation: [
+            9,
+            [
+              {
+                operator: Operator.DIVISION,
+                operation: [2, 2],
+              },
+            ],
+          ],
+        },
+      ],
+    ],
+  },
+]);
 
-console.log(calculator(operations));
+console.log(expected === actual, expected, actual);
